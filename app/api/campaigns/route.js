@@ -15,7 +15,9 @@ export async function GET() {
 // ✅ Add new campaign
 export async function POST(req) {
   try {
-    const { name } = await req.json();
+    const body = await req.json();
+    const { name } = body;
+
     if (!name) {
       return NextResponse.json({ error: "Campaign name is required" }, { status: 400 });
     }
@@ -38,8 +40,7 @@ export async function POST(req) {
 // ✅ Delete campaign
 export async function DELETE(req) {
   try {
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id");
+    const id = req.nextUrl.searchParams.get("id"); // 🔹 Use `req.nextUrl.searchParams`
 
     if (!id) {
       return NextResponse.json({ error: "Campaign ID is required" }, { status: 400 });

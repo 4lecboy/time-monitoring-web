@@ -108,8 +108,7 @@ function AddNewUsers({ onUsersAdded }) {
             <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full Name" />
             <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email Address" />
 
-            <div className="flex justify-between items-center">
-              <div className="w-4/5">
+              <div>
                 <label>Campaign:</label>
                 <select value={campaign} onChange={(e) => setCampaign(e.target.value)} className="p-3 border rounded-lg w-full">
                   <option value="">Choose Campaign</option>
@@ -120,8 +119,6 @@ function AddNewUsers({ onUsersAdded }) {
                   ))}
                 </select>
               </div>
-              <AddNewCampaign onCampaignAdded={fetchCampaigns} />
-            </div>
 
             <div>
               <label>User Type:</label>

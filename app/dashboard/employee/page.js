@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDebounce } from "use-debounce";
 import ConfirmDialog from "@/components/reusable/ConfirmDialog";
+import { Button } from "@/components/ui/button";
+import CampaignList from "@/components/pages-component/CampaignList";
 
 export default function userPage() {
   const [users, setusers] = useState([]);
@@ -81,12 +83,13 @@ const confirmDelete = (id) => {
   return (
     <div className="p-8 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="font-bold text-2xl">user Management</h1>
+        <h1 className="font-bold text-2xl">User Management</h1>
+        <CampaignList/>
         <AddNewuser onuserAdded={fetchusers} />
       </div>
 
       {/* user Analytics Summary */}
-  <div className="grid grid-cols-3 gap-4 mb-6">
+  <div>
   <Card className="p-4 text-center shadow">
     <CardHeader>
       <CardTitle className="text-lg">Total users</CardTitle>
@@ -95,25 +98,6 @@ const confirmDelete = (id) => {
       <p className="text-2xl font-bold">{totalUsers}</p> {/* ✅ Fix here */}
     </CardContent>
   </Card>
-    <Card className="p-4 text-center shadow">
-    <CardHeader>
-      <CardTitle className="text-lg">Admins</CardTitle>
-    </CardHeader>
-    <CardContent>
-      <p className="text-2xl font-bold">{roleCounts["admin"] || 0}</p>
-    </CardContent>
-  </Card>
-
-  <Card className="p-4 text-center shadow">
-    <CardHeader>
-      <CardTitle className="text-lg">Agents</CardTitle>
-    </CardHeader>
-    <CardContent>
-      <p className="text-2xl font-bold">{roleCounts["agent"] || 0}</p>
-    </CardContent>
-  </Card>
-    
-
 </div>
 
       {/* 🔍 Search & Filter */}
@@ -166,12 +150,12 @@ const confirmDelete = (id) => {
                     message="Are you sure you want to delete this user?"
                   />
 
-                  <button 
+                  <Button 
                     className="bg-red-600 text-white px-3 py-1 rounded flex items-center gap-2 hover:bg-red-700 transition" 
                     onClick={() => confirmDelete(emp.id)}
                   >
                     <Trash2 size={16} /> Remove
-                  </button>
+                  </Button>
 
                 </td>
               </tr>
