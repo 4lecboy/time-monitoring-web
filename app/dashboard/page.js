@@ -109,7 +109,7 @@ export default function Dashboard() {
           </Button>
         </div>
         
-        <div className="mt-6 p-6 bg-blue-50 rounded-lg shadow">
+        <div className="mt-6 p-6 bg-blue-50 rounded-lg shadow-md">
           <h2 className="text-xl font-bold text-gray-800 mb-4">Active Agents</h2>
           {filteredAgents.length > 0 ? (
             filteredAgents.map((agent) => (
