@@ -1,0 +1,149 @@
+Here’s a **structured table schema** suggestion for each table, optimized for your **EastWest BPO Time Monitoring System**. Let me know if you need modifications!
+
+---
+
+# **1️⃣ User & Campaign Management**
+## **`tbluser`** – Stores employee/user details.
+```sql
+CREATE TABLE tbluser (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    ashima_id VARCHAR(50) UNIQUE NOT NULL,  -- Employee ID
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,  -- Encrypted password
+    campaign_id INT,  -- Links to tblcampaign
+    role ENUM('Employee', 'Admin') DEFAULT 'Employee',
+    status ENUM('Active', 'Inactive') DEFAULT 'Active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (campaign_id) REFERENCES tblcampaign(id) ON DELETE SET NULL
+);
+```
+
+## **`tblcampaign`** – Stores different campaigns employees work under.
+```sql
+CREATE TABLE tblcampaign (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) UNIQUE NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+---
+
+# **2️⃣ Time Tracking**
+## **`tbltimeinout`** – Tracks when users clock in and out.
+```sql
+CREATE TABLE tbltimeinout (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,  -- Links to tbluser
+    time_in DATETIME NOT NULL,
+    time_out DATETIME NULL,  -- NULL until user clocks out
+    total_work_time INT DEFAULT 0,  -- Total seconds worked in this session
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES tbluser(id) ON DELETE CASCADE
+);
+```
+
+## **`tbltimeinout_bk`** – Backup table for `tbltimeinout` (if needed).
+```sql
+CREATE TABLE tbltimeinout_bk LIKE tbltimeinout;
+```
+*(Backups can be created periodically using a trigger or cron job.)*
+
+---
+
+# **3️⃣ Task & Activity Time Counters**
+## **`tblvoicecountertime`** – Tracks voice-related work time.
+```sql
+CREATE TABLE tblvoicecountertime (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    session_id INT NOT NULL,  -- Links to tbltimeinout
+    start_time DATETIME NOT NULL,
+    end_time DATETIME NULL,
+    duration INT DEFAULT 0,  -- Total time in seconds
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES tbluser(id) ON DELETE CASCADE,
+    FOREIGN KEY (session_id) REFERENCES tbltimeinout(id) ON DELETE CASCADE
+);
+```
+*(Repeat similar structures for the other task types.)*
+
+## **`tblemailcountertime`** – Tracks email-related work time.
+```sql
+CREATE TABLE tblemailcountertime LIKE tblvoicecountertime;
+```
+
+## **`tblchatcountertime`** – Tracks chat-related work time.
+```sql
+CREATE TABLE tblchatcountertime LIKE tblvoicecountertime;
+```
+
+## **`tblsupportcountertime`** – Tracks support-related tasks.
+```sql
+CREATE TABLE tblsupportcountertime LIKE tblvoicecountertime;
+```
+
+---
+
+# **4️⃣ Logs & Modules**
+## **`tbllogs`** – Stores system logs (activity, errors, etc.).
+```sql
+CREATE TABLE tbllogs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    action VARCHAR(255) NOT NULL,  -- Example: 'Clock In', 'Start Task: Email'
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    details TEXT NULL,
+    FOREIGN KEY (user_id) REFERENCES tbluser(id) ON DELETE CASCADE
+);
+```
+
+## **`tblmodule`** – Defines different system modules or permissions.
+```sql
+CREATE TABLE tblmodule (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    module_name VARCHAR(100) UNIQUE NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+---
+
+# **5️⃣ Weekly & Monthly Data**
+## **`tblmtd`** – Monthly Time Data (Tracks employee performance per month).
+```sql
+CREATE TABLE tblmtd (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    month YEAR(4) NOT NULL,
+    total_hours INT DEFAULT 0,  -- Total work time in seconds for the month
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES tbluser(id) ON DELETE CASCADE
+);
+```
+
+## **`tblwtd`** – Weekly Time Data (Similar to `tblmtd` but per week).
+```sql
+CREATE TABLE tblwtd (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    week_start DATE NOT NULL,  -- Start of the week
+    week_end DATE NOT NULL,  -- End of the week
+    total_hours INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES tbluser(id) ON DELETE CASCADE
+);
+```
+
+---
+
+## 🔹 **Next Steps**
+1. **Do these schemas match your expected database logic?**  
+2. **Would you like modifications or additional fields?**  
+3. **Would you like sample SQL queries to insert, update, and fetch data?**  
+
+Let me know! 🚀

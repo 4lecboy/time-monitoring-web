@@ -8,21 +8,28 @@ export async function middleware(req) {
   // ✅ Skip API requests
   if (url.startsWith("/api")) return NextResponse.next();
 
+  // Redirect to login if no token
   if (!token && url !== "/login") {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
   const role = token?.role;
 
-  if (url.startsWith("/dashboard") && !["admin", "pdd"].includes(role)) {
-    return NextResponse.redirect(new URL("/unauthorized", req.url));
+  // ✅ Admins have full access
+  if (role === "admin") return NextResponse.next();
+
+  // ✅ PDD can access dashboard
+  if (url.startsWith("/dashboard") && role === "pdd") {
+    return NextResponse.next();
   }
 
-  if (url.startsWith("/time-monitoring") && role !== "agent") {
-    return NextResponse.redirect(new URL("/unauthorized", req.url));
+  // ✅ Agents can only access time monitoring
+  if (url.startsWith("/time-monitoring") && role === "agent") {
+    return NextResponse.next();
   }
 
-  return NextResponse.next();
+  // ❌ Redirect unauthorized users
+  return NextResponse.redirect(new URL("/unauthorized", req.url));
 }
 
 export const config = {

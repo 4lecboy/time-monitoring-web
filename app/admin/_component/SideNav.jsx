@@ -28,10 +28,10 @@ export default function SideNav() {
   };
 
   const navItems = [
-    { name: "Dashboard", href: "/dashboard", icon: <Home size={20} /> },
-    { name: "Employee", href: "/dashboard/employee", icon: <Users size={20} /> },
-    { name: "Reports", href: "/dashboard/reports", icon: <FileText size={20} /> },
-    { name: "Time Monitoring", href: "/dashboard/time-monitoring", icon: <Clock size={20} /> },
+    { name: "Dashboard", href: "/admin/dashboard", icon: <Home size={20} /> },
+    { name: "Employee", href: "/admin/employee", icon: <Users size={20} /> },
+    { name: "Reports", href: "/admin/reports", icon: <FileText size={20} /> },
+    { name: "Time Monitoring", href: "/time-monitoring", icon: <Clock size={20} /> },
   ];
 
   return (

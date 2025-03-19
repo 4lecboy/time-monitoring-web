@@ -1,5 +1,5 @@
 import Providers from "./provider";
-import "./styles/globals.css";
+import "./globals.css";
 
 export const metadata = {
   title: "Time Monitoring System",

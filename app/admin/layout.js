@@ -1,7 +1,9 @@
 "use client";
 
-import SideNav from "@/components/common/SideNav";
-import Header from "@/components/common/Header";
+import Header from "./_component/Header";
+import SideNav from "./_component/SideNav";
+
+
 
 export default function DashboardLayout({ children }) {
     return (

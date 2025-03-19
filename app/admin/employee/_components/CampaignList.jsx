@@ -8,6 +8,7 @@ import { Trash2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import AddNewCampaign from "./AddNewCampaign";
 
+
 export default function CampaignList() {
   const [campaigns, setCampaigns] = useState([]);
   const [open, setOpen] = useState(false);

@@ -4,7 +4,8 @@ import { useSession, signOut } from "next-auth/react";
 import { motion } from "framer-motion";
 import { ChevronDown, LogOut, User, Calendar } from "lucide-react";
 import { useState, useEffect } from "react";
-import ProfileDialog from "../pages-component/ProfileDialog";
+import ProfileDialog from "./ProfileDialog";
+
 
 export default function Header() {
   const { data: session } = useSession();
