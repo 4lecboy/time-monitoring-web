@@ -15,17 +15,22 @@ export default function CampaignList() {
   const [confirmDialog, setConfirmDialog] = useState({ open: false, campaignId: null });
 
   useEffect(() => {
-    if (open) {
-      fetchCampaigns();
-    }
-  }, [open]);
+    fetchCampaigns();
+  }, []); // ✅ Fix: Runs once on mount
 
   const fetchCampaigns = async () => {
     try {
-      const { data } = await axios.get("/api/campaigns");
-      setCampaigns(data);
+      console.log("📥 Fetching campaigns...");
+      const res = await axios.get("/api/campaigns");
+
+      if (res.status === 200 && Array.isArray(res.data)) {
+        setCampaigns(res.data);
+      } else {
+        console.error("❌ Invalid API response:", res);
+        toast.error("Failed to fetch campaigns.");
+      }
     } catch (err) {
-      console.error("Error fetching campaigns:", err);
+      console.error("❌ Error fetching campaigns:", err);
       toast.error("Failed to fetch campaigns.");
     }
   };
@@ -36,16 +41,20 @@ export default function CampaignList() {
 
   const handleDeleteCampaign = async () => {
     try {
+      console.log("🗑 Deleting campaign:", confirmDialog.campaignId);
       await axios.delete(`/api/campaigns?id=${confirmDialog.campaignId}`);
-      setCampaigns((prev) => prev.filter((camp) => camp.id !== confirmDialog.campaignId));
       toast.success("Campaign removed successfully!");
+
+      // ✅ Ensure campaign list refreshes
+      fetchCampaigns();
     } catch (err) {
-      console.error("Error deleting campaign:", err);
+      console.error("❌ Error deleting campaign:", err);
       toast.error("Failed to delete campaign.");
     } finally {
       setConfirmDialog({ open: false, campaignId: null });
     }
   };
+  
 
   return (
     <>
@@ -57,7 +66,7 @@ export default function CampaignList() {
           <DialogHeader>
           <div className="flex justify-between mt-7">
             <DialogTitle className="font-bold text-lg">Campaign List</DialogTitle>
-            <AddNewCampaign onCampaignAdded={fetchCampaigns} />
+            <AddNewCampaign fetchCampaigns={fetchCampaigns} />
             </div>
             </DialogHeader>
           

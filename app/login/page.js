@@ -23,42 +23,57 @@ export default function LoginPage() {
     }
 
     try {
+      console.log("🔍 Attempting login with:", { email, password });
+
       const result = await signIn("credentials", {
         redirect: false,
         email,
         password,
       });
 
-      if (!result.ok) {
-        setError(result.error || "Invalid email or password.");
+      if (!result || result.error) {
+        console.error("❌ Authentication failed:", result?.error);
+        setError(result?.error || "Invalid email or password.");
         setLoading(false);
         return;
       }
 
-      // Wait for session update
-      const res = await fetch("/api/auth/session", { cache: "no-store" });
-      const session = await res.json();
+      console.log("✅ Login successful, fetching session...");
 
-      if (!session?.user) {
+      // Fetch the updated session
+      const res = await fetch("/api/auth/session", { cache: "no-store" });
+      if (!res.ok) {
+        console.error("❌ Failed to fetch session:", res.status);
         setError("Failed to retrieve session.");
         setLoading(false);
         return;
       }
 
-      const role = session.user.role;
+      const session = await res.json();
+      if (!session?.user) {
+        setError("Session data is missing.");
+        setLoading(false);
+        return;
+      }
+
+      console.log("🔹 Session retrieved:", session);
+
+      const { role } = session.user;
+
+      // Redirect based on role
       switch (role) {
         case "admin":
         case "pdd":
           router.push("/admin/dashboard");
           break;
-        case "agent":
+        case "employee": // Fix: Use "employee" instead of "agent"
           router.push("/time-monitoring");
           break;
         default:
           setError("Unauthorized role. Contact admin.");
       }
     } catch (err) {
-      console.error("Login error:", err);
+      console.error("❌ Login error:", err);
       setError("Something went wrong. Try again.");
     } finally {
       setLoading(false);

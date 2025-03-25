@@ -8,43 +8,55 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { toast } from "react-hot-toast";
 
-function AddNewCampaign({ onCampaignAdded }) {
+function AddNewCampaign({ fetchCampaigns }) {  // ✅ Fix: Ensure it receives fetchCampaigns
   const [open, setOpen] = useState(false);
   const [campaignName, setCampaignName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // ✅ Handle campaign submission
   const handleAddCampaign = async () => {
     setError("");
     if (!campaignName.trim()) {
       setError("Campaign name is required.");
       return;
     }
-
+  
     setLoading(true);
-
+  
     try {
+      console.log("🔍 Sending request to /api/campaigns:", { name: campaignName.trim() });
+  
       const res = await axios.post("/api/campaigns", { name: campaignName.trim() });
-
+  
+      console.log("✅ Campaign added successfully:", res);
+  
       if (res.status === 201) {
         toast.success("Campaign added successfully!");
-        onCampaignAdded(); // ✅ Refresh the campaign list
+        if (typeof fetchCampaigns === "function") {
+          fetchCampaigns(); 
+        } else {
+          console.error("❌ fetchCampaigns is not a function!");
+        }
         setOpen(false);
         setCampaignName("");
       }
     } catch (err) {
-      console.error("❌ Axios Error:", err.response?.data || err.message);
-      if (err.response?.status === 409) {
-        setError("Campaign already exists.");
+      console.error("❌ Axios Error:", err);
+  
+      if (err.response) {
+        console.error("🔴 Server Response:", err.response.status, err.response.data);
+        setError(err.response.data.error || "Failed to add campaign.");
+      } else if (err.request) {
+        console.error("🟠 No Response from Server:", err.request);
+        setError("No response from the server. Please check your API.");
       } else {
-        setError("Failed to add campaign. Please try again.");
+        console.error("⚠️ Request Setup Error:", err.message);
+        setError("An unknown error occurred.");
       }
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
-
   return (
     <div>
       <Button onClick={() => setOpen(true)} className="ml-2">

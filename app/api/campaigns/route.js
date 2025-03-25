@@ -1,55 +1,61 @@
 import { NextResponse } from "next/server";
-import db from "@/lib/db"; // MySQL connection
+import db from "@/lib/db";
 
-// ✅ Get all campaigns
+// 🔹 GET: Fetch All Campaigns
 export async function GET() {
   try {
-    const [campaigns] = await db.query("SELECT * FROM campaigns");
+    console.log("📥 Fetching campaigns...");
+    const [campaigns] = await db.query("SELECT id, name FROM campaigns");
     return NextResponse.json(campaigns, { status: 200 });
   } catch (error) {
-    console.error("🔥 Error fetching campaigns:", error);
-    return NextResponse.json({ error: "Failed to fetch campaigns" }, { status: 500 });
+    console.error("❌ GET /api/campaigns Error:", error);
+    return NextResponse.json({ error: "Failed to fetch campaigns", details: error.message }, { status: 500 });
   }
 }
 
-// ✅ Add new campaign
+// 🔹 POST: Add a New Campaign
 export async function POST(req) {
   try {
-    const body = await req.json();
-    const { name } = body;
-
+    const { name } = await req.json();
+    
     if (!name) {
+      console.log("⚠️ Campaign name is required");
       return NextResponse.json({ error: "Campaign name is required" }, { status: 400 });
     }
 
-    // 🔹 Check if campaign exists
-    const [existing] = await db.query("SELECT id FROM campaigns WHERE name = ?", [name]);
-    if (existing.length > 0) {
+    // Check if campaign already exists
+    const [existingCampaign] = await db.query("SELECT id FROM campaigns WHERE name = ?", [name]);
+    if (existingCampaign.length > 0) {
+      console.log("⚠️ Campaign already exists:", name);
       return NextResponse.json({ error: "Campaign already exists" }, { status: 409 });
     }
 
-    // 🔹 Insert into DB
+    // Insert new campaign
     await db.query("INSERT INTO campaigns (name) VALUES (?)", [name]);
+    console.log("✅ Campaign added successfully:", name);
     return NextResponse.json({ message: "Campaign added successfully" }, { status: 201 });
   } catch (error) {
-    console.error("🔥 Error adding campaign:", error);
-    return NextResponse.json({ error: "Failed to add campaign" }, { status: 500 });
+    console.error("❌ POST /api/campaigns Error:", error);
+    return NextResponse.json({ error: "Failed to add campaign", details: error.message }, { status: 500 });
   }
 }
 
-// ✅ Delete campaign
+// 🔹 DELETE: Remove a Campaign by ID
 export async function DELETE(req) {
   try {
-    const id = req.nextUrl.searchParams.get("id"); // 🔹 Use `req.nextUrl.searchParams`
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
 
     if (!id) {
+      console.log("⚠️ Missing Campaign ID");
       return NextResponse.json({ error: "Campaign ID is required" }, { status: 400 });
     }
 
     await db.query("DELETE FROM campaigns WHERE id = ?", [id]);
-    return NextResponse.json({ message: "Campaign deleted" }, { status: 200 });
+    console.log("✅ Campaign deleted:", id);
+    return NextResponse.json({ message: "Campaign deleted successfully" }, { status: 200 });
   } catch (error) {
-    console.error("🔥 Error deleting campaign:", error);
-    return NextResponse.json({ error: "Failed to delete campaign" }, { status: 500 });
+    console.error("❌ DELETE /api/campaigns Error:", error);
+    return NextResponse.json({ error: "Failed to delete campaign", details: error.message }, { status: 500 });
   }
 }

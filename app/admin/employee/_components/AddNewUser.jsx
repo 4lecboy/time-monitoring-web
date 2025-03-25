@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
@@ -6,16 +7,15 @@ import axios from "axios";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "react-hot-toast";
-import AddNewCampaign from "./AddNewCampaign";
 
-function AddNewUsers({ onUsersAdded }) {
+function AddNewUsers({ fetchUsers }) {
   const [open, setOpen] = useState(false);
   const [ashimaID, setAshimaID] = useState("");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [campaign, setCampaign] = useState("");
+  const [campaignID, setCampaignID] = useState("");
   const [campaigns, setCampaigns] = useState([]);
-  const [usersType, setUsersType] = useState("");
+  const [role, setRole] = useState("employee"); // Default to employee
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -40,53 +40,74 @@ function AddNewUsers({ onUsersAdded }) {
   const handleSave = async () => {
     setError("");
     setLoading(true);
-
-    if (!ashimaID || !fullName || !email || !password || !campaign || !usersType) {
+  
+    if (!ashimaID || !fullName || !email || !password || !campaignID || !role) {
       setError("All fields are required.");
       setLoading(false);
       return;
     }
-
+  
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
       setLoading(false);
       return;
     }
-
+  
     try {
-      const res = await axios.post("/api/users", {
-        AshimaID: ashimaID,
-        Name: fullName,
-        EmailAddress: email,
-        Password: password,
-        Campaign: campaign,
-        role: usersType,
+      console.log("🔍 Sending request to /api/users:", {
+        ashima_id: ashimaID,
+        full_name: fullName,
+        email,
+        password,
+        campaign_id: campaignID,
+        role,
+        status: "active",
       });
-
+  
+      const res = await axios.post("/api/users", {
+        ashima_id: ashimaID,
+        full_name: fullName,
+        email,
+        password,
+        campaign_id: campaignID,
+        role,
+        status: "active",
+      });
+  
+      console.log("✅ User created successfully:", res);
+  
       if (res.status === 201) {
         toast.success("User added successfully!");
+        fetchUsers(); // ✅ Refresh users list
         setOpen(false);
         resetForm();
       }
     } catch (err) {
-      console.error("Axios Error:", err.response?.data || err.message);
-
-      if (err.response?.status === 409) {
-        setError("Email already exists. Please use a different email.");
+      console.error("❌ Axios Error:", err);
+  
+      if (err.response) {
+        console.error("🔴 Server Response:", err.response);
+        setError(err.response.data.error || "Failed to add user.");
+      } else if (err.request) {
+        console.error("🟠 No Response from Server:", err.request);
+        setError("No response from the server. Please check your network.");
       } else {
-        setError("Failed to add user. Please try again.");
+        console.error("⚠️ Request Setup Error:", err.message);
+        setError("An unknown error occurred.");
       }
     } finally {
       setLoading(false);
     }
   };
+  
+  
 
   const resetForm = () => {
     setAshimaID("");
     setFullName("");
     setEmail("");
-    setCampaign("");
-    setUsersType("");
+    setCampaignID("");
+    setRole("employee"); // Reset to default role
     setPassword("");
     setConfirmPassword("");
   };
@@ -108,27 +129,32 @@ function AddNewUsers({ onUsersAdded }) {
             <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full Name" />
             <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email Address" />
 
-              <div>
-                <label>Campaign:</label>
-                <select value={campaign} onChange={(e) => setCampaign(e.target.value)} className="p-3 border rounded-lg w-full">
-                  <option value="">Choose Campaign</option>
-                  {campaigns.map((item, index) => (
-                    <option key={index} value={item.name}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div>
+              <label>Campaign:</label>
+              <select
+                value={campaignID}
+                onChange={(e) => setCampaignID(e.target.value)}
+                className="p-3 border rounded-lg w-full"
+              >
+                <option value="">Choose Campaign</option>
+                {campaigns.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <div>
               <label>User Type:</label>
-              <select value={usersType} onChange={(e) => setUsersType(e.target.value)} className="p-3 border rounded-lg w-full">
-                <option value="">Choose User Type</option>
-                {["Agent", "Admin", "PDD"].map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="p-3 border rounded-lg w-full"
+              >
+                <option value="employee">Employee</option>
+                <option value="admin">Admin</option>
+                <option value="pdd">PDD</option>
               </select>
             </div>
 

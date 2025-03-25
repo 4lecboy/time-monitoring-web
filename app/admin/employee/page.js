@@ -5,14 +5,19 @@ import axios from "axios";
 import { toast } from "react-hot-toast";
 import AddNewUsers from "./_components/AddNewUser";
 import CampaignList from "./_components/CampaignList";
+import { Button } from "@/components/ui/button";
+import ConfirmDialog from "./_components/ConfirmDialog";
 
 export default function EmployeePage() {
   const [users, setUsers] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
   const [search, setSearch] = useState("");
   const [filterCampaign, setFilterCampaign] = useState("");
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, ashima_id: null });
 
   useEffect(() => {
     fetchUsers();
+    fetchCampaigns();
   }, []);
 
   const fetchUsers = async () => {
@@ -25,23 +30,37 @@ export default function EmployeePage() {
     }
   };
 
-  const handleDelete = async (ashima_id) => {
+  const fetchCampaigns = async () => {
     try {
-      await axios.delete(`/api/users?ashima_id=${ashima_id}`);
+      const { data } = await axios.get("/api/campaigns");
+      setCampaigns(data);
+    } catch (err) {
+      console.error("Error fetching campaigns:", err);
+      toast.error("Failed to fetch campaigns.");
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      if (!confirmDialog.ashima_id) return;
+
+      await axios.delete(`/api/users?ashima_id=${confirmDialog.ashima_id}`);
       toast.success("User deleted successfully");
       fetchUsers();
     } catch (err) {
       console.error("Error deleting user:", err);
       toast.error("Failed to delete user.");
+    } finally {
+      setConfirmDialog({ open: false, ashima_id: null });
     }
   };
 
   const filteredUsers = users.filter((emp) => {
     return (
       (emp.ashima_id?.toLowerCase().includes(search.toLowerCase()) ||
-        emp.name?.toLowerCase().includes(search.toLowerCase()) ||
+        emp.full_name?.toLowerCase().includes(search.toLowerCase()) ||
         emp.email?.toLowerCase().includes(search.toLowerCase())) &&
-      (filterCampaign ? emp.campaign_id && emp.campaign_id.toString() === filterCampaign : true)
+      (filterCampaign ? emp.campaign_id?.toString() === filterCampaign : true)
     );
   });
 
@@ -50,8 +69,8 @@ export default function EmployeePage() {
       <div className="flex justify-between space-x-5">
         <h1 className="text-2xl font-bold mb-4">Employee Management</h1>
         <div className="flex space-x-5">
-          <CampaignList />
-          <AddNewUsers />
+          <CampaignList fetchCampaigns={fetchCampaigns} campaigns={campaigns} setFilterCampaign={setFilterCampaign} />
+          <AddNewUsers fetchUsers={fetchUsers} campaigns={campaigns} />
         </div>
       </div>
       <div className="mb-4 flex gap-2">
@@ -68,13 +87,11 @@ export default function EmployeePage() {
           onChange={(e) => setFilterCampaign(e.target.value)}
         >
           <option value="">All Campaigns</option>
-          {[...new Set(users.map((emp) => emp.campaign_id))]
-            .filter(Boolean)
-            .map((campaign, index) => (
-              <option key={index} value={campaign}>
-                Campaign #{campaign}
-              </option>
-            ))}
+          {campaigns.map((campaign) => (
+            <option key={campaign.id} value={campaign.id}>
+              {campaign.name}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -82,9 +99,9 @@ export default function EmployeePage() {
         <thead>
           <tr className="bg-gray-200">
             <th className="p-3 border">Ashima ID</th>
-            <th className="p-3 border">Name</th>
+            <th className="p-3 border">Full Name</th>
             <th className="p-3 border">Email</th>
-            <th className="p-3 border">Campaign ID</th>
+            <th className="p-3 border">Campaign</th>
             <th className="p-3 border">Role</th>
             <th className="p-3 border">Actions</th>
           </tr>
@@ -94,17 +111,19 @@ export default function EmployeePage() {
             filteredUsers.map((emp) => (
               <tr key={emp.ashima_id} className="border">
                 <td className="p-3 border">{emp.ashima_id || "N/A"}</td>
-                <td className="p-3 border">{emp.name || "N/A"}</td>
+                <td className="p-3 border">{emp.full_name || "N/A"}</td>
                 <td className="p-3 border">{emp.email || "N/A"}</td>
-                <td className="p-3 border">{emp.campaign_id || "N/A"}</td>
+                <td className="p-3 border">
+                  {campaigns.find((c) => c.id === emp.campaign_id)?.name || "N/A"}
+                </td>
                 <td className="p-3 border">{emp.role || "N/A"}</td>
                 <td className="p-3 border">
-                  <button
+                  <Button
                     className="bg-red-500 text-white px-3 py-1 rounded"
-                    onClick={() => handleDelete(emp.ashima_id)}
+                    onClick={() => setConfirmDialog({ open: true, ashima_id: emp.ashima_id })}
                   >
                     Delete
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))
@@ -115,6 +134,14 @@ export default function EmployeePage() {
           )}
         </tbody>
       </table>
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.open}
+        onClose={() => setConfirmDialog({ open: false, ashima_id: null })}
+        onConfirm={handleDelete}
+        message="Are you sure you want to delete this user?"
+      />
     </div>
   );
 }

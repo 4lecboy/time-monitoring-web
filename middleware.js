@@ -1,37 +1,33 @@
-import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 
 export async function middleware(req) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-  const url = req.nextUrl.pathname;
 
-  // ✅ Skip API requests
-  if (url.startsWith("/api")) return NextResponse.next();
-
-  // Redirect to login if no token
-  if (!token && url !== "/login") {
-    return NextResponse.redirect(new URL("/login", req.url));
+  // If user is not authenticated, redirect to login
+  if (!token) {
+    return NextResponse.redirect(new URL("/auth/login", req.url));
   }
 
-  const role = token?.role;
+  const { role } = token;
+  const pathname = req.nextUrl.pathname;
 
-  // ✅ Admins have full access
-  if (role === "admin") return NextResponse.next();
+  // Define protected routes by role
+  const adminRoutes = ["/admin/dashboard", "/admin/reports"];
+  const employeeRoutes = ["/time-monitoring"];
 
-  // ✅ PDD can access dashboard
-  if (url.startsWith("/dashboard") && role === "pdd") {
-    return NextResponse.next();
+  if (adminRoutes.includes(pathname) && role !== "admin" && role !== "pdd") {
+    return NextResponse.redirect(new URL("/", req.url)); // Redirect unauthorized users
   }
 
-  // ✅ Agents can only access time monitoring
-  if (url.startsWith("/time-monitoring") && role === "agent") {
-    return NextResponse.next();
+  if (employeeRoutes.includes(pathname) && role !== "employee") {
+    return NextResponse.redirect(new URL("/", req.url));
   }
 
-  // ❌ Redirect unauthorized users
-  return NextResponse.redirect(new URL("/unauthorized", req.url));
+  return NextResponse.next();
 }
 
+// Define protected paths
 export const config = {
-  matcher: ["/dashboard/:path*", "/employee/:path*", "/time-monitoring/:path*"],
+  matcher: ["/admin/:path*", "/time-monitoring"],
 };
