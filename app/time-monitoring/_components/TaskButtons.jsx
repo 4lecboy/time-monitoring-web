@@ -1,86 +1,50 @@
-'use client';
-
-import { useState, useEffect } from "react";
+"use client";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import axios from "axios";
+import { toast } from "react-hot-toast";
 
-const TASK_TYPES = ["Voice", "Email", "Data", "Chat", "Support"];
+const tasks = ["Voice", "Email", "Data", "Chat", "Support"];
 
-export default function TaskButtons({ userId, sessionId }) {
+export default function TaskButtons({ ashima_id, updateTimers }) {
   const [activeTask, setActiveTask] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [startTime, setStartTime] = useState(null);
 
-  useEffect(() => {
-    fetchActiveTask();
-  }, []);
+  const handleTaskClick = async (task) => {
+    if (activeTask === task) {
+      const endTime = new Date();
+      const taskDuration = Math.floor((endTime - startTime) / 1000);
+      const formattedTime = new Date(taskDuration * 1000).toISOString().substr(11, 8);
 
-  const fetchActiveTask = async () => {
-    try {
-      const response = await fetch(`/api/tasks?user_id=${userId}`);
-      const data = await response.json();
-      if (response.ok && data.id) {
-        setActiveTask(data);
-      } else {
-        setActiveTask(null);
-      }
-    } catch (error) {
-      console.error("Failed to fetch active task:", error);
-    }
-  };
-
-  const handleTaskClick = async (taskType) => {
-    setLoading(true);
-
-    if (activeTask) {
-      // End active task
       try {
-        const response = await fetch("/api/time-monitoring/tasks", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ task_id: activeTask.id }),
+        await axios.post("/api/time-tracking/task", {
+          ashima_id,
+          task_type: task,
+          task_time: formattedTime,
         });
-
-        const data = await response.json();
-        if (response.ok) {
-          setActiveTask(null);
-        } else {
-          console.error("Error:", data.error);
-        }
+        toast.success(`${task} task recorded`);
+        updateTimers(task, taskDuration);
       } catch (error) {
-        console.error("Request failed:", error);
+        toast.error("Failed to log task");
       }
+
+      setActiveTask(null);
+      setStartTime(null);
     } else {
-      // Start new task
-      try {
-        const response = await fetch("/api/tasks", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_id: userId, session_id: sessionId, task_type: taskType }),
-        });
-
-        const data = await response.json();
-        if (response.ok) {
-          fetchActiveTask();
-        } else {
-          console.error("Error:", data.error);
-        }
-      } catch (error) {
-        console.error("Request failed:", error);
-      }
+      setActiveTask(task);
+      setStartTime(new Date());
     }
-
-    setLoading(false);
   };
 
   return (
-    <div className="flex flex-wrap justify-center gap-4 p-4">
-      {TASK_TYPES.map((task) => (
+    <div className="flex gap-2">
+      {tasks.map((task) => (
         <Button
           key={task}
           onClick={() => handleTaskClick(task)}
-          className={`px-6 py-2 text-white ${activeTask?.task_type === task ? "bg-green-500" : "bg-blue-500"}`}
-          disabled={loading}
+          className={`${activeTask === task ? "bg-blue-600" : "bg-green-600"}`}
         >
-          {activeTask?.task_type === task ? `Stop ${task}` : `Start ${task}`}
+          {task}
         </Button>
       ))}
     </div>
