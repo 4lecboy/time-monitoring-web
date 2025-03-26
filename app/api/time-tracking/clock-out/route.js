@@ -9,12 +9,11 @@ export async function POST(req) {
       return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
     }
 
-    // Get today's date in YYYY-MM-DD format
     const today = new Date().toISOString().split("T")[0];
 
-    // Check if user has already clocked out today
+    // Check if the user already clocked out today
     const [existingClockOut] = await pool.query(
-      "SELECT id FROM attendance WHERE ashima_id = ? AND status = 'OUT' AND DATE(created_at) = ?",
+      "SELECT id FROM attendance WHERE ashima_id = ? AND status = 'OUT' AND DATE(time_out) = ?",
       [ashima_id, today]
     );
 
@@ -22,9 +21,9 @@ export async function POST(req) {
       return NextResponse.json({ error: "User has already clocked out today." }, { status: 409 });
     }
 
-    // Find the latest clock-in record
+    // Find the most recent clock-in record that hasn't been clocked out
     const [rows] = await pool.query(
-      "SELECT id FROM attendance WHERE ashima_id = ? AND status = 'IN' ORDER BY created_at DESC LIMIT 1",
+      "SELECT id FROM attendance WHERE ashima_id = ? AND status = 'IN' AND time_out IS NULL ORDER BY time_in DESC LIMIT 1",
       [ashima_id]
     );
 
@@ -36,13 +35,13 @@ export async function POST(req) {
 
     // Update the latest attendance record to clock out
     await pool.query(
-      "UPDATE attendance SET status = 'OUT', logout_by = ? WHERE id = ?",
+      "UPDATE attendance SET status = 'OUT', time_out = NOW(), logout_by = ? WHERE id = ?",
       [logout_by, attendanceId]
     );
 
     return NextResponse.json({
       success: true,
-      message: `User ${ashima_id} clocked out by ${logout_by}`,
+      message: `User ${ashima_id} successfully clocked out.`,
     });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

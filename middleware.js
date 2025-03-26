@@ -14,13 +14,13 @@ export async function middleware(req) {
 
   // Define protected routes by role
   const adminRoutes = ["/admin/dashboard", "/admin/reports"];
-  const employeeRoutes = ["/time-monitoring"];
+  const agentRoutes = ["/time-monitoring"];
 
   if (adminRoutes.includes(pathname) && role !== "admin" && role !== "pdd") {
     return NextResponse.redirect(new URL("/", req.url)); // Redirect unauthorized users
   }
 
-  if (employeeRoutes.includes(pathname) && role !== "employee") {
+  if (agentRoutes.includes(pathname) && role !== "agent") {
     return NextResponse.redirect(new URL("/", req.url));
   }
 

@@ -66,7 +66,7 @@ export default function LoginPage() {
         case "pdd":
           router.push("/admin/dashboard");
           break;
-        case "employee": // Fix: Use "employee" instead of "agent"
+        case "agent":
           router.push("/time-monitoring");
           break;
         default:
