@@ -3,42 +3,34 @@ import { NextResponse } from "next/server";
 
 export async function POST(req) {
   try {
-    const body = await req.json();
-    console.log("Received request payload:", body); // ✅ Log received payload
-
-    const { ashima_id } = body;
+    const { ashima_id } = await req.json();
 
     if (!ashima_id) {
       console.error("❌ Missing ashima_id in request");
       return NextResponse.json({ error: "Missing ashima_id" }, { status: 400 });
     }
 
-    const today = new Date().toISOString().split("T")[0];
-
-    // Check if the user already clocked in today without clocking out
+    // ✅ Check if the user is already clocked in
     const [existingClockIn] = await pool.query(
-      "SELECT id FROM attendance WHERE ashima_id = ? AND status = 'IN' AND time_out IS NULL AND DATE(time_in) = ?",
-      [ashima_id, today]
-    );
-
-    if (existingClockIn.length > 0) {
-      console.error(`❌ User ${ashima_id} is already clocked in.`);
-      return NextResponse.json({ error: "User is already clocked in." }, { status: 409 });
-    }
-
-    // Insert a new clock-in record
-    await pool.query(
-      "INSERT INTO attendance (ashima_id, time_in, status) VALUES (?, NOW(), 'IN')",
+      "SELECT id FROM attendance WHERE ashima_id = ? AND status = 'IN' ORDER BY time_in DESC LIMIT 1",
       [ashima_id]
     );
 
-    return NextResponse.json({
-      success: true,
-      message: `User ${ashima_id} successfully clocked in.`,
-    });
+    if (existingClockIn.length > 0) {
+      return NextResponse.json({ isClockedIn: true, error: "User is already clocked in." }, { status: 409 });
+    }
+
+    // ✅ Insert new clock-in entry with `time_in`
+    await pool.query(
+      "INSERT INTO attendance (ashima_id, status, time_in) VALUES (?, 'IN', NOW())",
+      [ashima_id]
+    );
+
+    console.log(`✅ User ${ashima_id} clocked in at ${new Date().toISOString()}`);
+    return NextResponse.json({ isClockedIn: true, success: true, message: `User ${ashima_id} successfully clocked in.` });
 
   } catch (error) {
-    console.error("❌ Clock-in API Error:", error);
-    return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
+    console.error("❌ Error during clock-in:", error);
+    return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
   }
 }

@@ -5,46 +5,34 @@ import { toast } from "react-hot-toast";
 
 const auxActivities = ["Break 1", "Lunch", "Break 2", "Rest Room", "Coaching", "Training", "Meeting", "Technical"];
 
-export default function AuxManager({ activeTask, setActiveTask }) {
-  const [selectedAux, setSelectedAux] = useState(null);
-  const [auxTimers, setAuxTimers] = useState({});
+export default function AuxManager({ isClockedIn, activeTask, setActiveTask, activeAux, setActiveAux }) {
   const [auxTime, setAuxTime] = useState(0);
-  const [isAuxRunning, setIsAuxRunning] = useState(false);
+  const [auxTimers, setAuxTimers] = useState({});
 
   useEffect(() => {
     let interval;
-    if (isAuxRunning) {
+    if (isClockedIn && activeAux && !activeTask) {
       interval = setInterval(() => {
         setAuxTime((prev) => prev + 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isAuxRunning]);
-
-  useEffect(() => {
-    let interval;
-    if (selectedAux) {
-      interval = setInterval(() => {
         setAuxTimers((prevTimers) => ({
           ...prevTimers,
-          [selectedAux]: (prevTimers[selectedAux] || 0) + 1,
+          [activeAux]: (prevTimers[activeAux] || 0) + 1,
         }));
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [selectedAux]);
+  }, [isClockedIn, activeAux, activeTask]);
 
   const handleAuxClick = (activity) => {
-    if (selectedAux === activity) {
-      setSelectedAux(null);
-      setIsAuxRunning(false);
-      setActiveTask(null);
-      toast.success(`Stopped: ${activity}`);
-    } else {
-      setSelectedAux(activity);
-      setActiveTask(null);
-      setIsAuxRunning(true);
-      toast.success(`Started: ${activity}`);
+    if (!isClockedIn) {
+      toast.error("You must clock in first!");
+      return;
+    }
+
+    if (activeAux !== activity) {
+      setActiveAux(activity);
+      setActiveTask(null); // ✅ Stop any running task timer
+      toast.success(`Switched to: ${activity}`);
     }
   };
 
@@ -62,10 +50,10 @@ export default function AuxManager({ activeTask, setActiveTask }) {
         {auxActivities.map((activity) => (
           <Button
             key={activity}
-            disabled={!!activeTask}
+            disabled={!isClockedIn} // ✅ Prevent clicking if not clocked in
             onClick={() => handleAuxClick(activity)}
-            className={`${selectedAux === activity ? "bg-orange-600" : "bg-gray-600"} ${
-              activeTask ? "opacity-50 cursor-not-allowed" : ""
+            className={`${activeAux === activity ? "bg-orange-600" : "bg-gray-600"} ${
+              !isClockedIn ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
             {activity}
@@ -73,7 +61,7 @@ export default function AuxManager({ activeTask, setActiveTask }) {
         ))}
       </div>
 
-      {/* Show all aux timers */}
+      {/* Show aux timers */}
       <div className="mt-4 p-4 border rounded-lg shadow-lg bg-white text-center">
         <h3 className="text-lg font-bold">Non-Work Timers</h3>
         {auxActivities.map((activity) => (

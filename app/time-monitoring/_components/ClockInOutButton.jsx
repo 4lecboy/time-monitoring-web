@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
 import { toast } from "react-hot-toast";
@@ -8,51 +8,58 @@ import clsx from "clsx";
 export default function ClockInOutButton({ ashima_id, isClockedIn, setIsClockedIn }) {
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  // ✅ Define a stable function for fetching clock status
+  const checkClockStatus = useCallback(async () => {
     if (!ashima_id) return;
-
-    axios.get(`/api/time-tracking/clock-status?ashima_id=${ashima_id}`)
-      .then((res) => setIsClockedIn(res.data.isClockedIn))
-      .catch((error) => {
-        console.error("Error checking clock status:", error.response?.data || error.message);
-        setIsClockedIn(false);
-      });
+    
+    try {
+      const res = await axios.get(`/api/time-tracking/clock-status?ashima_id=${ashima_id}`);
+      setIsClockedIn(res.data.isClockedIn);
+    } catch (error) {
+      console.error("Error checking clock status:", error);
+      setIsClockedIn(false);
+    }
   }, [ashima_id, setIsClockedIn]);
 
-  const handleClockAction = async (action) => {
-    if (loading) return;
-  
-    if (action === "clock-out") {
-      const confirmLogout = window.confirm("Are you sure you want to clock out?");
-      if (!confirmLogout) return;
-    }
-  
-    console.log("Sending request:", { ashima_id, logout_by: ashima_id });
-  
+  // ✅ Only `ashima_id` is in the dependency array, ensuring stability
+  useEffect(() => {
+    checkClockStatus();
+  }, [checkClockStatus]); 
+
+  const handleClockIn = async () => {
+    if (loading || isClockedIn) return;
     setLoading(true);
+
     try {
-      const res = await axios.post(`/api/time-tracking/${action}`, { ashima_id, logout_by: ashima_id });
-      console.log("API Response:", res.data);
-      
-      setIsClockedIn((prev) => !prev);
-      toast.success(`Successfully clocked ${action === "clock-in" ? "in" : "out"}!`);
+      const res = await axios.post("/api/time-tracking/clock-in", { ashima_id });
+      setIsClockedIn(res.data.isClockedIn);
+      toast.success("Clocked in successfully!");
     } catch (error) {
-      console.error("Clock action failed:", error);
-      console.error("Response data:", error.response?.data || "No error details provided");
-  
-      toast.error(error.response?.data?.error || "An unknown error occurred.");
+      toast.error(error.response?.data?.error || "Failed to clock in.");
     } finally {
       setLoading(false);
     }
   };
-  
-  
-  
+
+  const handleClockOut = async () => {
+    if (loading || !isClockedIn) return;
+    setLoading(true);
+
+    try {
+      await axios.post("/api/time-tracking/clock-out", { ashima_id, logout_by: ashima_id });
+      setIsClockedIn(false);
+      toast.success("Clocked out successfully!");
+    } catch (error) {
+      toast.error(error.response?.data?.error || "Failed to clock out.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="text-center mt-4">
       <Button
-        onClick={() => handleClockAction(isClockedIn ? "clock-out" : "clock-in")}
+        onClick={isClockedIn ? handleClockOut : handleClockIn}
         className={clsx(
           "px-6 py-3 text-xl transition-opacity",
           isClockedIn ? "bg-red-600" : "bg-green-600",

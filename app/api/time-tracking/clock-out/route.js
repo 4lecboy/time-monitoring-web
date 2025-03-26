@@ -6,44 +6,38 @@ export async function POST(req) {
     const { ashima_id, logout_by } = await req.json();
 
     if (!ashima_id || !logout_by) {
+      console.error("❌ Missing parameters in request");
       return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
     }
 
-    const today = new Date().toISOString().split("T")[0];
-
-    // Check if the user already clocked out today
-    const [existingClockOut] = await pool.query(
-      "SELECT id FROM attendance WHERE ashima_id = ? AND status = 'OUT' AND DATE(time_out) = ?",
-      [ashima_id, today]
-    );
-
-    if (existingClockOut.length > 0) {
-      return NextResponse.json({ error: "User has already clocked out today." }, { status: 409 });
-    }
-
-    // Find the most recent clock-in record that hasn't been clocked out
-    const [rows] = await pool.query(
-      "SELECT id FROM attendance WHERE ashima_id = ? AND status = 'IN' AND time_out IS NULL ORDER BY time_in DESC LIMIT 1",
+    // ✅ Find the latest clock-in record that hasn't been clocked out
+    const [existingClockIn] = await pool.query(
+      "SELECT id, time_in FROM attendance WHERE ashima_id = ? AND status = 'IN' AND time_out IS NULL ORDER BY time_in DESC LIMIT 1",
       [ashima_id]
     );
 
-    if (rows.length === 0) {
-      return NextResponse.json({ error: "User is not clocked in." }, { status: 409 });
+    if (existingClockIn.length === 0) {
+      return NextResponse.json({ error: "User is not clocked in or already clocked out." }, { status: 409 });
     }
 
-    const attendanceId = rows[0].id;
+    const attendanceId = existingClockIn[0].id;
+    const timeIn = new Date(existingClockIn[0].time_in);
+    const timeOut = new Date(); // Current timestamp
 
-    // Update the latest attendance record to clock out
+    // ✅ Calculate total hours (difference between time_in and time_out)
+    const totalHours = ((timeOut - timeIn) / 1000 / 60 / 60).toFixed(2); // Convert ms to hours
+
+    // ✅ Update `time_out`, `total_hours`, and `logout_by`
     await pool.query(
-      "UPDATE attendance SET status = 'OUT', time_out = NOW(), logout_by = ? WHERE id = ?",
-      [logout_by, attendanceId]
+      "UPDATE attendance SET status = 'OUT', time_out = NOW(), total_hours = ?, logout_by = ? WHERE id = ?",
+      [totalHours, logout_by, attendanceId]
     );
 
-    return NextResponse.json({
-      success: true,
-      message: `User ${ashima_id} successfully clocked out.`,
-    });
+    console.log(`✅ User ${ashima_id} clocked out at ${timeOut.toISOString()} (Total Hours: ${totalHours})`);
+    return NextResponse.json({ isClockedIn: false, success: true, message: `User ${ashima_id} successfully clocked out.` });
+
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("❌ Error during clock-out:", error);
+    return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
   }
 }

@@ -2,16 +2,22 @@
 import { useState, useEffect } from "react";
 
 export default function Clock() {
-  const [time, setTime] = useState(new Date());
+  const [currentTime, setCurrentTime] = useState("");
 
   useEffect(() => {
-    const interval = setInterval(() => setTime(new Date()), 1000);
+    const updateClock = () => {
+      setCurrentTime(new Date().toLocaleTimeString());
+    };
+
+    updateClock(); // Set initial time
+    const interval = setInterval(updateClock, 1000); // Update every second
+
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className=" text-6xl font-bold text-gray-700">
-      {time.toLocaleTimeString()}
+    <div className="text-6xl font-bold text-gray-700">
+      {currentTime || "Loading..."}
     </div>
   );
 }

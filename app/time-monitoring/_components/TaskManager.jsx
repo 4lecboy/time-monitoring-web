@@ -5,46 +5,30 @@ import { toast } from "react-hot-toast";
 
 const tasks = ["Voice", "Email", "Data", "Chat", "Support"];
 
-export default function TaskManager({ isClockedIn, activeAux, setActiveAux }) {
-  const [selectedTask, setSelectedTask] = useState(null);
+export default function TaskManager({ isClockedIn, activeAux, setActiveAux, activeTask, setActiveTask }) {
   const [staffHrs, setStaffHrs] = useState(0);
   const [taskTimers, setTaskTimers] = useState({});
-  const [isTaskRunning, setIsTaskRunning] = useState(false);
 
   useEffect(() => {
     let interval;
-    if (isTaskRunning) {
+    if (activeTask && !activeAux) {
       interval = setInterval(() => {
         setStaffHrs((prev) => prev + 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isTaskRunning]);
-
-  useEffect(() => {
-    let interval;
-    if (selectedTask) {
-      interval = setInterval(() => {
         setTaskTimers((prevTimers) => ({
           ...prevTimers,
-          [selectedTask]: (prevTimers[selectedTask] || 0) + 1,
+          [activeTask]: (prevTimers[activeTask] || 0) + 1,
         }));
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [selectedTask]);
+  }, [activeTask, activeAux]);
 
   const handleTaskClick = (task) => {
-    if (!isClockedIn || activeAux) return;
-
-    if (selectedTask === task) {
-      setSelectedTask(null);
-      setIsTaskRunning(false);
-      toast.success(`Stopped task: ${task}`);
-    } else {
-      setSelectedTask(task);
-      setActiveAux(null);
-      setIsTaskRunning(true);
+    if (!isClockedIn) return;
+    
+    if (activeTask !== task) {
+      setActiveTask(task);
+      setActiveAux(null); // ✅ Stop any running aux timer
       toast.success(`Switched to task: ${task}`);
     }
   };
@@ -62,19 +46,17 @@ export default function TaskManager({ isClockedIn, activeAux, setActiveAux }) {
       <div className="flex gap-2">
         {tasks.map((task) => (
           <Button
+            disabled={!isClockedIn}
             key={task}
-            disabled={!isClockedIn || activeAux}
             onClick={() => handleTaskClick(task)}
-            className={`${selectedTask === task ? "bg-blue-600" : "bg-green-600"} ${
-              !isClockedIn || activeAux ? "opacity-50 cursor-not-allowed" : ""
-            }`}
+            className={`${activeTask === task ? "bg-blue-600" : "bg-green-600"}`}
           >
             {task}
           </Button>
         ))}
       </div>
 
-      {/* Show all task timers */}
+      {/* Show task timers */}
       <div className="mt-4 p-4 border rounded-lg shadow-lg bg-white text-center">
         <h3 className="text-lg font-bold">Task Timers</h3>
         {tasks.map((task) => (
