@@ -7,7 +7,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 .env
 ```
-NEXTAUTH_SECRET=235f01bb46f707cbbfe54fa32bfa6bdaedece559163f202ee63245f5ab3d62f4
+NEXTAUTH_SECRET=<nextauth_secret>
 DB_HOST=<database_host>
 DB_USER=<database_user>
 DB_PASS=<database_pass>
