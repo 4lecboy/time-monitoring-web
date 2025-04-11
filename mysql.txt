@@ -1,0 +1,78 @@
+-- Create Campaign Table
+CREATE TABLE campaign (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE
+);
+
+-- Users Table (Employee/Admin Info)
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    ashima_id VARCHAR(255) NOT NULL UNIQUE, -- Ensuring ashima_id is unique
+    full_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE, -- UNIQUE constraint moved to ensure no duplicate emails
+    password VARCHAR(255) NOT NULL,
+    role ENUM('admin', 'pdd', 'agent') NOT NULL,
+    campaign_id INT NOT NULL,
+    status ENUM('active', 'inactive') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (campaign_id) REFERENCES campaign(id) ON DELETE CASCADE, -- Ensuring cascading delete for associated campaigns
+    INDEX (role),
+    INDEX (status)
+);
+
+-- Attendance Table (Clock In/Out)
+CREATE TABLE attendance (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    clock_in DATETIME DEFAULT NULL,
+    clock_out DATETIME DEFAULT NULL,
+    total_hours DECIMAL(5,2) GENERATED ALWAYS AS ( -- Ensuring proper calculation of total hours
+        CASE 
+            WHEN clock_in IS NOT NULL AND clock_out IS NOT NULL THEN TIMESTAMPDIFF(SECOND, clock_in, clock_out) / 3600
+            ELSE 0 -- Default to 0 if clock_in or clock_out is NULL
+        END
+    ) STORED,
+    status ENUM('working', 'on_break', 'off_duty') DEFAULT 'off_duty', -- Defaulting to 'off_duty' for clarity
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX (user_id),
+    INDEX (status)
+);
+
+-- Timers Table
+CREATE TABLE timers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    activity_name VARCHAR(255) NOT NULL,
+    elapsed_time INT DEFAULT 0, -- Total elapsed time in seconds
+    start_time DATETIME DEFAULT NULL, -- Null if not currently running
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Tracking when the timer entry was created
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- Tracking updates
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, -- Ensuring cascading delete for associated users
+    INDEX (activity_name) -- Adding an index for faster queries on activity_name
+);
+
+------------------------------------------------------------------------
+
+
+
+
+
+-- Adding example data
+INSERT INTO users (full_name, email, password, role, campaign, status)
+VALUES
+    ('John Doe', 'john.doe@example.com', '$2b$10$gqBb4cRL6x9U6XS5SaLyUu5Xp2LrHlYmik..SQ9LQKrH7xh.a9y8e', 'admin', 'IT', 'active'),
+    ('Jane Smith', 'jane.smith@example.com', '$2b$10$gqBb4cRL6x9U6XS5SaLyUu5Xp2LrHlYmik..SQ9LQKrH7xh.a9y8e', 'pdd', 'Sales', 'active'),
+    ('Alice Johnson', 'alice.johnson@example.com', '$2b$10$gqBb4cRL6x9U6XS5SaLyUu5Xp2LrHlYmik..SQ9LQKrH7xh.a9y8e', 'agent', 'All', 'inactive'),
+    ('Bob Brown', 'bob.brown@example.com', '$2b$10$gqBb4cRL6x9U6XS5SaLyUu5Xp2LrHlYmik..SQ9LQKrH7xh.a9y8e', 'agent', 'IT', 'active');
+
+
+
+-- Updating example data
+UPDATE `users` SET `password` = '$2b$10$gqBb4cRL6x9U6XS5SaLyUu5Xp2LrHlYmik..SQ9LQKrH7xh.a9y8e' WHERE `users`.`id` = 4;
+
+
+-- Adding new column
+ALTER TABLE users ADD ashima_id VARCHAR(255) AFTER id;
+
+
